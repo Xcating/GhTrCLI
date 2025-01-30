@@ -137,8 +137,10 @@ void GhTrCLI::ClsCommand(const std::vector<std::wstring>& /*aArgs*/)
 void GhTrCLI::AttachCommand(const std::vector<std::wstring>& aArgs)
 {
     std::wstring targetProcessName;
-    if (aArgs.empty() && mProcessHelper.IsAttached())
-        Logger::PrintSuccess(_S("已成功附加到") + mProcessHelper.GetProcessIDByName(mProcessHelper.GetProcessName()));
+    if (aArgs.empty() && mProcessHelper.IsAttached()) {
+        Logger::PrintSuccess(_S("已成功附加到目标"));
+        return;
+    }
     if (aArgs.empty())
     {
         // 没有提供进程名称，默认检查 PlantsVsZombies.exe
