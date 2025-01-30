@@ -1,0 +1,39 @@
+# Ignore build folders
+[Dd]ebug/
+[Dd]ebugPublic/
+[Dd]evelopment/
+[Dd]evelopmentPublic/
+[Dd]ebug-*/ 
+[Dd]ebugPublic-*/ 
+x64/
+x86/
+
+# Ignore binaries
+*.exe
+*.dll
+*.lib
+*.so
+*.dylib
+
+# Ignore temporary files
+*.log
+*.obj
+*.pch
+*.pdb
+*.idb
+*.ilk
+*.ncb
+*.suo
+*.user
+*.aps
+*.pch
+
+# Ignore Visual Studio files
+.vs/
+.git/
+.idea/
+
+# Ignore CMake files
+CMakeCache.txt
+CMakeFiles/
+CMakeLists.txt.user
