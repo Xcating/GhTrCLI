@@ -29,6 +29,7 @@ private:
     std::unordered_map<std::wstring, CommandFunction> mCommands;
 
     void RegisterCommands();
+    int StringToInt(const std::wstring& str, bool& success);
     std::vector<std::wstring> ParseCommand(const std::wstring& aInput);
 
     void HelpCommand(const std::vector<std::wstring>& aArgs);

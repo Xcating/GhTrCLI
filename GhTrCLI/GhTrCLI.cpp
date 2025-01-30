@@ -187,6 +187,26 @@ void GhTrCLI::AttachCommand(const std::vector<std::wstring>& aArgs)
     }
 }
 
+int GhTrCLI::StringToInt(const std::wstring& str, bool& success)
+{
+    try
+    {
+        int value = std::stoi(str);
+        success = true;
+        return value;
+    }
+    catch (const std::invalid_argument&)
+    {
+        success = false;
+        return 0;
+    }
+    catch (const std::out_of_range&)
+    {
+        success = false;
+        return 0;
+    }
+}
+
 void GhTrCLI::SetSunCommand(const std::vector<std::wstring>& aArgs)
 {
     if (aArgs.empty())
@@ -195,13 +215,18 @@ void GhTrCLI::SetSunCommand(const std::vector<std::wstring>& aArgs)
         return;
     }
 
-    int theSunValue = _wtoi(aArgs[0].c_str());
+    bool success = false;
+    int theSunValue = StringToInt(aArgs[0], success);
+    if (!success)
+    {
+        Logger::PrintError(_S("无法解析为有效数字"));
+        return;
+    }
     if (theSunValue < 0)
     {
         Logger::PrintError(_S("无效的阳光数值"));
         return;
     }
-
     if (!mProcessHelper.IsAttached())
     {
         Logger::PrintError(_S("尚未附加到任何进程"));
