@@ -1,5 +1,8 @@
 ﻿#include "GhTrCLI.h"
+#include <conio.h>
 #include <sstream>
+#include <unordered_map>
+#include <vector>
 
 GhTrCLI::GhTrCLI()
 {
@@ -35,6 +38,7 @@ void GhTrCLI::Run()
     Logger::Initialize();
     Logger::PrintHeader(_S("欢迎使用 ") + gProjectName + _S(" (版本 ") + gProjectVersion + _S(") !"));
     Logger::PrintInfo(_S("输入 help 查看帮助，exit 退出"));
+
     if (ProcessHelper::IsProcessRunning(_S("PlantsVsZombies.exe")))
     {
         Logger::PrintInfo(_S("检测到 PlantsVsZombies.exe 正在运行"));
@@ -55,21 +59,87 @@ void GhTrCLI::Run()
         }
     }
 
+    std::vector<std::wstring> history;  // 用于保存命令历史
+    int historyIndex = -1;  // 当前历史命令索引
+    std::wstring aInput;  // 当前输入的命令
+    std::wstring prefix;  // 自动补全前缀
+
     while (true)
     {
         Logger::PrintStarter();
-        std::wstring aInput;
-        if (!std::getline(std::wcin, aInput))
-        {
-            break;
-        }
+        aInput.clear();  // 清空输入
+        historyIndex = history.size();  // 每次开始新的命令时重置历史索引
 
+        while (true)
+        {
+            if (_kbhit())  // 检测键盘输入
+            {
+                char ch = _getch();
+                if (ch == 13)  // 回车键 (Enter)
+                {
+                    if (!aInput.empty()) {
+                        history.push_back(aInput);  // 保存命令到历史
+                        historyIndex = history.size();  // 更新历史索引
+                    }
+                    break;
+                }
+                else if (ch == 9)  // Tab键
+                {
+                    // 自动补全逻辑
+                    prefix = aInput;
+                    auto matched = AutoComplete(prefix);
+                    if (matched.size() == 1)
+                    {
+                        aInput = matched[0];
+                        std::wcout << L"\r> " << aInput;  // 自动补全后保留">"提示符
+                    }
+                    else
+                    {
+                        DisplaySuggestions(matched);
+                    }
+                }
+                else if (ch == 8)  // Backspace键
+                {
+                    if (!aInput.empty())
+                    {
+                        aInput.pop_back();  // 删除最后一个字符
+                        std::wcout << L"\r> " << aInput << L" ";  // 重新绘制输入框
+                        std::wcout << L"\r> " << aInput;  // 保持光标在正确位置
+                    }
+                }
+                else if (ch == -32)
+                {
+                    ch = _getch();
+                    if (ch == 72) //Up
+                    {
+                        if (historyIndex > 0) {
+                            --historyIndex;
+                            aInput = history[historyIndex];
+                            std::wcout << L"\r> " << aInput;
+                        }
+                    }
+                    else if (ch == 80) //Down
+                    {
+                        if (static_cast<size_t>(historyIndex) < history.size() - 1) {
+                            ++historyIndex;
+                            aInput = history[historyIndex];
+                            std::wcout << L"\r> " << aInput;
+                        }
+                    }
+                }
+                else
+                {
+                    aInput.push_back(ch);
+                    std::wcout << ch;  // 显示输入的字符
+                }
+            }
+        }
+        std::wcout << std::endl;  // 确保回车后换行
         auto aTokens = ParseCommand(aInput);
         if (aTokens.empty())
         {
             continue;
         }
-
         const auto& aCommandName = aTokens[0];
         auto aIt = mCommands.find(aCommandName);
         if (aIt != mCommands.end())
@@ -84,6 +154,31 @@ void GhTrCLI::Run()
     }
 
     Logger::PrintInfo(_S("CLI 已退出"));
+}
+
+// 自动补全命令
+std::vector<std::wstring> GhTrCLI::AutoComplete(const std::wstring& prefix)
+{
+    std::vector<std::wstring> matchedCommands;
+    for (const auto& cmd : mCommands)
+    {
+        if (cmd.first.find(prefix) == 0)  // 如果命令以输入的前缀开始
+        {
+            matchedCommands.push_back(cmd.first);
+        }
+    }
+    return matchedCommands;
+}
+
+// 显示可选的补全命令
+void GhTrCLI::DisplaySuggestions(const std::vector<std::wstring>& suggestions)
+{
+    std::wcout << L"\n匹配命令: ";
+    for (const auto& suggestion : suggestions)
+    {
+        std::wcout << suggestion << L" ";
+    }
+    std::wcout << std::endl;
 }
 
 std::vector<std::wstring> GhTrCLI::ParseCommand(const std::wstring& aInput)

@@ -9,6 +9,7 @@
 #include "Logger.h"
 #include "ProcessHelper.h"
 #include "GhTrMemory.h"
+#include <unordered_map>
 
 #define _S(str) L##str
 
@@ -30,6 +31,8 @@ private:
 
     void RegisterCommands();
     int StringToInt(const std::wstring& str, bool& success);
+    void DisplaySuggestions(const std::vector<std::wstring>& suggestions);
+    std::vector<std::wstring> AutoComplete(const std::wstring& prefix);
     std::vector<std::wstring> ParseCommand(const std::wstring& aInput);
 
     void HelpCommand(const std::vector<std::wstring>& aArgs);
