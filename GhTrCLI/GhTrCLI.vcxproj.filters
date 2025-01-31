@@ -41,5 +41,20 @@
     <ClInclude Include="GhTrMemory.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="LanguageManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="lang_en.json" />
+    <None Include="lang_zh.json" />
   </ItemGroup>
 </Project>

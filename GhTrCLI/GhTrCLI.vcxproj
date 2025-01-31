@@ -135,9 +135,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GhTrMemory.h" />
+    <ClInclude Include="LanguageManager.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="GhTrCLI.h" />
     <ClInclude Include="ProcessHelper.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="lang_en.json" />
+    <None Include="lang_zh.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

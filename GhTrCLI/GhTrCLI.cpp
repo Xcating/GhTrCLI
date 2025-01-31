@@ -6,6 +6,9 @@
 
 GhTrCLI::GhTrCLI()
 {
+    mLanguageManager.LoadLanguage(PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_CHINESE
+        ? LanguageManager::Language::Chinese
+        : LanguageManager::Language::English);
     RegisterCommands();
 }
 
@@ -14,7 +17,6 @@ void GhTrCLI::RegisterCommands()
     mCommands[_S("help")] = [this](const std::vector<std::wstring>& aArgs) {
         HelpCommand(aArgs);
         };
-
     mCommands[_S("exit")] = [this](const std::vector<std::wstring>& aArgs) {
         ExitCommand(aArgs);
         };
@@ -27,22 +29,24 @@ void GhTrCLI::RegisterCommands()
     mCommands[_S("attach")] = [this](const std::vector<std::wstring>& aArgs) {
         AttachCommand(aArgs);
         };
-
     mCommands[_S("set-sun")] = [this](const std::vector<std::wstring>& aArgs) {
         SetSunCommand(aArgs);
+        };
+    mCommands[_S("set-lang")] = [this](const std::vector<std::wstring>& aArgs) {
+        SetLangCommand(aArgs);
         };
 }
 
 void GhTrCLI::Run()
 {
     Logger::Initialize();
-    Logger::PrintHeader(_S("欢迎使用 ") + gProjectName + _S(" (版本 ") + gProjectVersion + _S(") !"));
-    Logger::PrintInfo(_S("输入 help 查看帮助，exit 退出"));
+    Logger::PrintHeader(mLanguageManager.GetString(L"welcome_message"));
+    Logger::PrintInfo(mLanguageManager.GetString(L"help_message"));
 
     if (ProcessHelper::IsProcessRunning(_S("PlantsVsZombies.exe")))
     {
-        Logger::PrintInfo(_S("检测到 PlantsVsZombies.exe 正在运行"));
-        Logger::Print(_S("是否附加到该进程？(y/n)："), Logger::TextColor::Yellow);
+        Logger::PrintInfo(mLanguageManager.GetString(L"detect_pvz_running"));
+        Logger::Print(mLanguageManager.GetString(L"ask_attach_process"), Logger::TextColor::Yellow);
         std::wstring theResponse;
         std::getline(std::wcin, theResponse);
         if (theResponse == _S("y") || theResponse == _S("Y"))
@@ -50,11 +54,11 @@ void GhTrCLI::Run()
             mProcessHelper.SetProcessName(_S("PlantsVsZombies.exe"));
             if (mProcessHelper.Attach())
             {
-                Logger::PrintSuccess(_S("已成功附加到进程PlantsVsZombies.exe"));
+                Logger::PrintSuccess(mLanguageManager.GetString(L"attach_pvz_success"));
             }
             else
             {
-                Logger::PrintError(_S("无法附加到进程,请检查游戏版本和进程状态"));
+                Logger::PrintError(mLanguageManager.GetString(L"attach_pvz_fail"));
             }
         }
     }
@@ -68,8 +72,7 @@ void GhTrCLI::Run()
     {
         Logger::PrintStarter();
         aInput.clear();  // 清空输入
-        historyIndex = history.size();  // 每次开始新的命令时重置历史索引
-
+        historyIndex = static_cast<int>(history.size());
         while (true)
         {
             if (_kbhit())  // 检测键盘输入
@@ -79,7 +82,7 @@ void GhTrCLI::Run()
                 {
                     if (!aInput.empty()) {
                         history.push_back(aInput);  // 保存命令到历史
-                        historyIndex = history.size();  // 更新历史索引
+                        historyIndex = static_cast<int>(history.size());
                     }
                     break;
                 }
@@ -115,7 +118,8 @@ void GhTrCLI::Run()
                         if (historyIndex > 0) {
                             --historyIndex;
                             aInput = history[historyIndex];
-                            std::wcout << L"\r> " << aInput;
+                            std::wcout << L"\r> " << aInput << L"                                        ";  // 添加空格清除旧内容
+                            std::wcout << L"\r> " << aInput;  // 重新定位光标
                         }
                     }
                     else if (ch == 80) //Down
@@ -123,7 +127,8 @@ void GhTrCLI::Run()
                         if (static_cast<size_t>(historyIndex) < history.size() - 1) {
                             ++historyIndex;
                             aInput = history[historyIndex];
-                            std::wcout << L"\r> " << aInput;
+                            std::wcout << L"\r> " << aInput << L"                                        ";  // 添加空格清除旧内容
+                            std::wcout << L"\r> " << aInput;  // 重新定位光标
                         }
                     }
                 }
@@ -134,12 +139,14 @@ void GhTrCLI::Run()
                 }
             }
         }
+
         std::wcout << std::endl;  // 确保回车后换行
         auto aTokens = ParseCommand(aInput);
         if (aTokens.empty())
         {
             continue;
         }
+
         const auto& aCommandName = aTokens[0];
         auto aIt = mCommands.find(aCommandName);
         if (aIt != mCommands.end())
@@ -149,14 +156,13 @@ void GhTrCLI::Run()
         }
         else
         {
-            Logger::PrintError(_S("未知命令: ") + aCommandName);
+            Logger::PrintError(mLanguageManager.GetString(L"unknown_command") + aCommandName);
         }
     }
 
-    Logger::PrintInfo(_S("CLI 已退出"));
+    Logger::PrintInfo(mLanguageManager.GetString(L"cli_exited"));
 }
 
-// 自动补全命令
 std::vector<std::wstring> GhTrCLI::AutoComplete(const std::wstring& prefix)
 {
     std::vector<std::wstring> matchedCommands;
@@ -170,7 +176,6 @@ std::vector<std::wstring> GhTrCLI::AutoComplete(const std::wstring& prefix)
     return matchedCommands;
 }
 
-// 显示可选的补全命令
 void GhTrCLI::DisplaySuggestions(const std::vector<std::wstring>& suggestions)
 {
     std::wcout << L"\n匹配命令: ";
@@ -195,22 +200,24 @@ std::vector<std::wstring> GhTrCLI::ParseCommand(const std::wstring& aInput)
 
 void GhTrCLI::HelpCommand(const std::vector<std::wstring>& aArgs)
 {
-    Logger::PrintHeader(_S("GhTrCLI 帮助信息："));
-    Logger::Print(_S("[当前版本] ") + gProjectVersion, Logger::TextColor::Yellow);
-    Logger::Print(_S("[当前支持GhTr版本] ") + gSupportingVersion, Logger::TextColor::Yellow);
-    Logger::Print(_S("[项目简介] ") + gProjectDesc, Logger::TextColor::Yellow);
+    Logger::PrintHeader(mLanguageManager.GetString(L"help_header"));
 
-    Logger::Print(_S("[可用命令] "), Logger::TextColor::Green);
-    Logger::Print(_S(" · help            显示此帮助信息"), Logger::TextColor::Cyan);
-    Logger::Print(_S(" · cls            清空命令行信息"), Logger::TextColor::Cyan);
-    Logger::Print(_S(" · exit 或 quit    退出 CLI"), Logger::TextColor::Cyan);
-    Logger::Print(_S(" · attach      尝试附加到 PlantsVsZombies.exe"), Logger::TextColor::Cyan);
-    Logger::Print(_S(" · attach [进程名]      尝试附加到指定的进程"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"current_version") + gProjectVersion, Logger::TextColor::Yellow);
+    Logger::Print(mLanguageManager.GetString(L"supporting_version") + gSupportingVersion, Logger::TextColor::Yellow);
+    Logger::Print(mLanguageManager.GetString(L"project_desc_prefix") + mLanguageManager.GetString(L"project_desc"), Logger::TextColor::Yellow);
 
-    Logger::Print(_S("[游戏操作命令] "), Logger::TextColor::Green);
-    Logger::Print(_S(" · set-sun <阳光数量>      修改已附加进程游戏的阳光数量"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"available_commands"), Logger::TextColor::Green);
+    Logger::Print(mLanguageManager.GetString(L"cmd_help"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_cls"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_exit"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_set_lang"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_set_lang_point"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_attach_pvz"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_attach_process"), Logger::TextColor::Cyan);
 
-    Logger::Print(_S("功能仅供测试使用 使用后会为您的存档添加上「帮助模式」标记"), Logger::TextColor::Yellow);
+    Logger::Print(mLanguageManager.GetString(L"game_commands"), Logger::TextColor::Green);
+    Logger::Print(mLanguageManager.GetString(L"cmd_set_sun"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"test_warning"), Logger::TextColor::Yellow);
 }
 
 void GhTrCLI::ExitCommand(const std::vector<std::wstring>& /*aArgs*/)
@@ -218,9 +225,9 @@ void GhTrCLI::ExitCommand(const std::vector<std::wstring>& /*aArgs*/)
     if (mProcessHelper.IsAttached())
     {
         mProcessHelper.Detach();
-        Logger::PrintInfo(_S("已断开与目标进程的连接"));
+        Logger::PrintInfo(mLanguageManager.GetString(L"detached_process"));
     }
-    Logger::PrintSuccess(_S("正在退出 ") + gProjectName + _S("..."));
+    Logger::PrintSuccess(mLanguageManager.GetString(L"exiting_prefix") + gProjectName + mLanguageManager.GetString(L"exiting_suffix"));
     std::exit(0);
 }
 
@@ -233,29 +240,30 @@ void GhTrCLI::AttachCommand(const std::vector<std::wstring>& aArgs)
 {
     std::wstring targetProcessName;
     if (aArgs.empty() && mProcessHelper.IsAttached()) {
-        Logger::PrintSuccess(_S("已成功附加到目标"));
+        Logger::PrintSuccess(mLanguageManager.GetString(L"attach_success"));
         return;
     }
+
     if (aArgs.empty())
     {
         // 没有提供进程名称，默认检查 PlantsVsZombies.exe
         targetProcessName = _S("PlantsVsZombies.exe");
         if (ProcessHelper::IsProcessRunning(targetProcessName))
         {
-            Logger::PrintInfo(_S("检测到 ") + targetProcessName + _S(" 正在运行"));
-            Logger::Print(_S("是否附加到该进程？(y/n)："), Logger::TextColor::Yellow);
+            Logger::PrintInfo(mLanguageManager.GetString(L"detect_process_running_prefix") + targetProcessName + mLanguageManager.GetString(L"detect_process_running_suffix"));
+            Logger::Print(mLanguageManager.GetString(L"ask_attach_process"), Logger::TextColor::Yellow);
             std::wstring theResponse;
             std::getline(std::wcin, theResponse);
             if (theResponse != _S("y") && theResponse != _S("Y"))
             {
-                Logger::PrintInfo(_S("操作已取消"));
+                Logger::PrintInfo(mLanguageManager.GetString(L"operation_canceled"));
                 return;
             }
         }
         else
         {
-            Logger::PrintError(targetProcessName + _S(" 未运行"));
-            Logger::Print(_S("请使用 'attach [进程名]' 命令指定要附加的进程"), Logger::TextColor::Yellow);
+            Logger::PrintError(targetProcessName + mLanguageManager.GetString(L"not_running"));
+            Logger::Print(mLanguageManager.GetString(L"please_use_attach"), Logger::TextColor::Yellow);
             return;
         }
     }
@@ -265,20 +273,19 @@ void GhTrCLI::AttachCommand(const std::vector<std::wstring>& aArgs)
         targetProcessName = aArgs[0];
         if (!ProcessHelper::IsProcessRunning(targetProcessName))
         {
-            Logger::PrintError(_S("未找到进程 ") + targetProcessName + _S(""));
+            Logger::PrintError(mLanguageManager.GetString(L"process_not_found_prefix") + targetProcessName + mLanguageManager.GetString(L"process_not_found_suffix"));
             return;
         }
     }
 
     mProcessHelper.SetProcessName(targetProcessName);
-
     if (mProcessHelper.Attach())
     {
-        Logger::PrintSuccess(_S("已成功附加到进程 ") + targetProcessName + _S(""));
+        Logger::PrintSuccess(mLanguageManager.GetString(L"attach_success_prefix") + targetProcessName + mLanguageManager.GetString(L"attached_success_suffix"));
     }
     else
     {
-        Logger::PrintError(_S("无法附加到进程 ") + targetProcessName + _S(" ,请检查游戏版本和进程状态"));
+        Logger::PrintError(mLanguageManager.GetString(L"attach_fail_prefix") + targetProcessName + mLanguageManager.GetString(L"attach_fail_suffix"));
     }
 }
 
@@ -306,45 +313,71 @@ void GhTrCLI::SetSunCommand(const std::vector<std::wstring>& aArgs)
 {
     if (aArgs.empty())
     {
-        Logger::PrintError(_S("缺少阳光数参数"));
+        Logger::PrintError(mLanguageManager.GetString(L"missing_sun_arg"));
         return;
     }
-
     bool success = false;
     int theSunValue = StringToInt(aArgs[0], success);
     if (!success)
     {
-        Logger::PrintError(_S("无法解析为有效数字"));
+        Logger::PrintError(mLanguageManager.GetString(L"invalid_number"));
         return;
     }
     if (theSunValue < 0)
     {
-        Logger::PrintError(_S("无效的阳光数值"));
+        Logger::PrintError(mLanguageManager.GetString(L"invalid_sun_value"));
         return;
     }
     if (!mProcessHelper.IsAttached())
     {
-        Logger::PrintError(_S("尚未附加到任何进程"));
+        Logger::PrintError(mLanguageManager.GetString(L"no_process_attached"));
         return;
     }
 
     GhTrMemory aGameMemory(mProcessHelper);
     if (!aGameMemory.Initialize())
     {
-        Logger::PrintError(_S("初始化游戏内存失败，可能是游戏版本错误或进程无法打开"));
+        Logger::PrintError(mLanguageManager.GetString(L"init_memory_fail"));
         return;
     }
     if (!aGameMemory.GetBoardAddress())
     {
-        Logger::PrintError(_S("未进入草坪，无法修改阳光"));
+        Logger::PrintError(mLanguageManager.GetString(L"board_not_found"));
         return;
     }
     if (aGameMemory.SetSunValue(theSunValue))
     {
-        Logger::PrintSuccess(_S("成功设置阳光数值为: ") + std::to_wstring(theSunValue));
+        Logger::PrintSuccess(mLanguageManager.GetString(L"sun_set_success") + std::to_wstring(theSunValue));
     }
     else
     {
-        Logger::PrintError(_S("无法设置阳光数值"));
+        Logger::PrintError(mLanguageManager.GetString(L"sun_set_fail"));
+    }
+}
+void GhTrCLI::SetLangCommand(const std::vector<std::wstring>& aArgs)
+{
+    if (aArgs.empty())
+    {
+        bool isChinese = mLanguageManager.GetLanguage() == LanguageManager::Language::Chinese;
+        mLanguageManager.SetLanguage(isChinese ? LanguageManager::Language::English : LanguageManager::Language::Chinese);
+        Logger::PrintSuccess(mLanguageManager.GetString(isChinese ? L"lang_set_en_success" : L"lang_set_zh_success"));
+        return;
+    }
+    const std::vector<std::wstring> theEnglishKeys = { L"English", L"english", L"Eng", L"eng", L"En", L"en", L"英语", L"英文" };
+    const std::vector<std::wstring> theChineseKeys = { L"Chinese", L"chinese", L"cn", L"zh", L"zh-cn", L"cn-zh", L"中文", L"汉语" };
+
+    if (std::find(theEnglishKeys.begin(), theEnglishKeys.end(), aArgs[0]) != theEnglishKeys.end()) 
+    {
+        mLanguageManager.SetLanguage(LanguageManager::Language::English);
+        Logger::PrintSuccess(mLanguageManager.GetString(L"lang_set_en_success"));
+    }
+    else if (std::find(theChineseKeys.begin(), theChineseKeys.end(), aArgs[0]) != theChineseKeys.end())
+    {
+        mLanguageManager.SetLanguage(LanguageManager::Language::Chinese);
+        Logger::PrintSuccess(mLanguageManager.GetString(L"lang_set_zh_success"));
+    }
+    else
+    {
+        Logger::PrintError(mLanguageManager.GetString(L"lang_set_fail"));
     }
 }

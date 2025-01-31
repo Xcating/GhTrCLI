@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <locale>
 #include <unordered_map>
 #include <functional>
 #include <windows.h>
@@ -10,13 +11,13 @@
 #include "ProcessHelper.h"
 #include "GhTrMemory.h"
 #include <unordered_map>
+#include "LanguageManager.h"
 
 #define _S(str) L##str
 
 static const std::wstring gProjectName = _S("GhTrCLI");
 static const std::wstring gProjectVersion = _S("ver.0.01a");
 static const std::wstring gSupportingVersion = _S("ver.0.17d");
-static const std::wstring gProjectDesc = _S("GhTr 游戏的外置命令行工具，用于与游戏进行交互");
 
 class GhTrCLI
 {
@@ -28,6 +29,7 @@ public:
 
 private:
     std::unordered_map<std::wstring, CommandFunction> mCommands;
+    LanguageManager mLanguageManager;
 
     void RegisterCommands();
     int StringToInt(const std::wstring& str, bool& success);
@@ -40,6 +42,7 @@ private:
     void ClsCommand(const std::vector<std::wstring>& aArgs);
     void AttachCommand(const std::vector<std::wstring>& aArgs);
     void SetSunCommand(const std::vector<std::wstring>& aArgs);
+    void SetLangCommand(const std::vector<std::wstring>& aArgs);
 
     ProcessHelper mProcessHelper;
 };
