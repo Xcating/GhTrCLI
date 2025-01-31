@@ -411,6 +411,9 @@ void GhTrCLI::HelpCommand(const std::vector<std::wstring>& aArgs)
 
     Logger::Print(mLanguageManager.GetString(L"game_commands"), Logger::TextColor::Green);
     Logger::Print(mLanguageManager.GetString(L"cmd_set_sun"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_gamerule"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_gamerule_ignore"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_gamerule_unlimited_sun"), Logger::TextColor::Cyan);
     Logger::Print(mLanguageManager.GetString(L"test_warning"), Logger::TextColor::Yellow);
 
     // 可以在这里再提示：gamerule unlimitedSun true/false
