@@ -632,11 +632,11 @@ void GhTrCLI::GameRuleCommand(const std::vector<std::wstring>& aArgs)
             bool newState = false;
             bool validParam = true;
 
-            if (boolArg == L"true" || boolArg == L"1")
+            if (boolArg == L"true" || boolArg == L"1" || boolArg == L"on")
             {
                 newState = true;
             }
-            else if (boolArg == L"false" || boolArg == L"0")
+            else if (boolArg == L"false" || boolArg == L"0" || boolArg == L"off")
             {
                 newState = false;
             }
