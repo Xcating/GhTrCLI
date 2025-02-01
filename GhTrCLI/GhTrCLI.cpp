@@ -164,6 +164,10 @@ void GhTrCLI::Run()
                     std::wcout << static_cast<wchar_t>(firstKey);
                 }
             }
+            else
+            {
+                Sleep(10);
+            }
         }
 
         std::wcout << std::endl;  // 确保回车后换行
