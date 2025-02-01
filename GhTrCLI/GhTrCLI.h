@@ -22,7 +22,6 @@ class GhTrCLI
 {
 public:
     using CommandFunction = std::function<void(const std::vector<std::wstring>&)>;
-
     GhTrCLI();
     void Run();
 
@@ -33,6 +32,7 @@ private:
     // 常用功能
     int StringToInt(const std::wstring& str, bool& success);
     void DisplaySuggestions(const std::vector<std::wstring>& suggestions);
+    static void TrimHistory(std::vector<std::wstring>& history);
 
     // 新增：处理多级自动补全
     void HandleTabKey(std::wstring& aInput);
@@ -42,9 +42,6 @@ private:
     std::wstring BuildCompletionString(const std::vector<std::wstring>& tokens,
         bool endsWithSpace,
         const std::wstring& completion);
-
-    // 如果还保留了旧的简单补全，可继续留着
-    std::vector<std::wstring> AutoComplete(const std::wstring& prefix);
 
     // 解析输入命令
     std::vector<std::wstring> ParseCommand(const std::wstring& aInput);

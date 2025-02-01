@@ -49,6 +49,9 @@ const std::wstring& ProcessHelper::GetProcessName() const {
 }
 
 bool ProcessHelper::ReadMemory(LPCVOID address, void* buffer, SIZE_T size) {
+    if (address == nullptr || buffer == nullptr || size == 0) {
+        return false;
+    }
     SIZE_T bytesRead;
     return ReadProcessMemory(mProcessHandle, address, buffer, size, &bytesRead);
 }

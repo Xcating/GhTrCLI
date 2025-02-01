@@ -53,6 +53,13 @@ void GhTrCLI::RegisterCommands()
         };
 }
 
+void GhTrCLI::TrimHistory(std::vector<std::wstring> &history) {
+    const size_t maxHistorySize = 100;
+    if (history.size() > maxHistorySize) {
+        history.erase(history.begin(), history.begin() + (history.size() - maxHistorySize));
+    }
+}
+
 void GhTrCLI::Run()
 {
     Logger::Initialize();
@@ -94,21 +101,23 @@ void GhTrCLI::Run()
         {
             if (_kbhit())  // 检测键盘输入
             {
-                char ch = _getch();
-                if (ch == 13)  // 回车键 (Enter)
+                // 使用宽字符输入函数 _getwch()，返回类型通常用 wint_t 接收
+                wint_t firstKey = _getwch();
+                if (firstKey == 13)  // 回车键 (Enter)
                 {
                     if (!aInput.empty()) {
                         history.push_back(aInput);  // 保存命令到历史
                         historyIndex = (int)history.size();
+                        TrimHistory(history);
                     }
                     break;
                 }
-                else if (ch == 9)  // Tab键
+                else if (firstKey == 9)  // Tab键
                 {
                     // 自动补全
                     HandleTabKey(aInput);
                 }
-                else if (ch == 8)  // Backspace键
+                else if (firstKey == 8)  // Backspace键
                 {
                     if (!aInput.empty())
                     {
@@ -117,12 +126,10 @@ void GhTrCLI::Run()
                         std::wcout << L"\r> " << aInput;          // 保持光标在正确位置
                     }
                 }
-                else if (ch == -32)
-                {
-                    // 方向键
-                    ch = _getch();
-                    if (ch == 72) // Up
-                    {
+                else if (firstKey == 0 || firstKey == 224) {
+                    // 特殊键标志，接下来获取实际的键码
+                    wint_t specialKey = _getwch();
+                    if (specialKey == 72) { // 上箭头
                         // 查看上一条历史记录
                         if (historyIndex > 0) {
                             --historyIndex;
@@ -132,18 +139,16 @@ void GhTrCLI::Run()
                             std::wcout << L"\r> " << aInput;
                         }
                     }
-                    else if (ch == 80) // Down
-                    {
+                    else if (specialKey == 80) { // 下箭头
                         // 查看下一条历史记录
-                        if ((size_t)historyIndex < history.size() - 1) {
+                        if (static_cast<size_t>(historyIndex) < history.size() - 1) {
                             ++historyIndex;
                             aInput = history[historyIndex];
                             // 用空格覆盖旧字符
                             std::wcout << L"\r> " << aInput << L"                                        ";
                             std::wcout << L"\r> " << aInput;
                         }
-                        else if ((size_t)historyIndex == history.size() - 1)
-                        {
+                        else if (static_cast<size_t>(historyIndex) == history.size() - 1) {
                             // 再往下则清空
                             ++historyIndex;
                             aInput.clear();
@@ -151,12 +156,12 @@ void GhTrCLI::Run()
                             std::wcout << L"\r> ";
                         }
                     }
+                    // 如果需要，可以在这里扩展其他特殊键的处理
                 }
-                else
-                {
-                    // 普通字符输入
-                    aInput.push_back(ch);
-                    std::wcout << ch;  // 显示输入的字符
+                else {
+                    // 普通字符处理：直接追加到 aInput 中
+                    aInput.push_back(static_cast<wchar_t>(firstKey));
+                    std::wcout << static_cast<wchar_t>(firstKey);
                 }
             }
         }
@@ -381,6 +386,7 @@ std::vector<std::wstring> GhTrCLI::ParseCommand(const std::wstring& aInput)
     }
     return aTokens;
 }
+
 
 void GhTrCLI::DisplaySuggestions(const std::vector<std::wstring>& suggestions)
 {
