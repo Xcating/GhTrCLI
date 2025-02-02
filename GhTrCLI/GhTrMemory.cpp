@@ -71,6 +71,15 @@ bool GhTrMemory::SetSunValue(int sunValue) {
     return mProcessHelper.WriteMemory(reinterpret_cast<LPVOID>(mSunAddress), &sunValue, sizeof(sunValue));
 }
 
+int GhTrMemory::GetSunValue() {
+    RetrieveSunAddress();
+    if (!mProcessHelper.IsAttached() || mSunAddress == 0)
+        return false;
+    int theSunAmount=0;
+    mProcessHelper.ReadMemory(reinterpret_cast<LPCVOID>(mSunAddress), &theSunAmount, sizeof(DWORD));
+    return theSunAmount;
+}
+
 bool GhTrMemory::ToggleUnlimitedSun(bool state) {
     RetrieveUnlimitedSunAddress();
     if (!mProcessHelper.IsAttached() || mUnlimitedSunAddress == 0)

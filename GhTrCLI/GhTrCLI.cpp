@@ -51,6 +51,9 @@ void GhTrCLI::RegisterCommands()
     mCommands[_S("gamerule")] = [this](const std::vector<std::wstring>& aArgs) {
         GameRuleCommand(aArgs);
         };
+    mCommands[_S("info")] = [this](const std::vector<std::wstring>& aArgs) {
+        InfoCommand(aArgs);
+        };
 }
 
 void GhTrCLI::TrimHistory(std::vector<std::wstring> &history) {
@@ -421,6 +424,7 @@ void GhTrCLI::HelpCommand(const std::vector<std::wstring>& aArgs)
 
     Logger::Print(mLanguageManager.GetString(L"game_commands"), Logger::TextColor::Green);
     Logger::Print(mLanguageManager.GetString(L"cmd_set_sun"), Logger::TextColor::Cyan);
+    Logger::Print(mLanguageManager.GetString(L"cmd_info"), Logger::TextColor::Cyan);
     Logger::Print(mLanguageManager.GetString(L"cmd_gamerule"), Logger::TextColor::Cyan);
     Logger::Print(mLanguageManager.GetString(L"cmd_gamerule_ignore"), Logger::TextColor::Cyan);
     Logger::Print(mLanguageManager.GetString(L"cmd_gamerule_unlimited_sun"), Logger::TextColor::Cyan);
@@ -677,4 +681,23 @@ void GhTrCLI::GameRuleCommand(const std::vector<std::wstring>& aArgs)
         // 不支持的 gamerule
         Logger::PrintError(mLanguageManager.GetString(L"unknown_gamerule") + aArgs[0]);
     }
+}
+
+void GhTrCLI::InfoCommand(const std::vector<std::wstring>& aArgs) 
+{
+    auto isAttached = mProcessHelper.IsAttached();
+    auto hasBoardAddr = GhTrMemory(mProcessHelper).GetBoardAddress();
+
+    auto getStatusColor = [](bool status) { return status ? Logger::TextColor::Green : Logger::TextColor::Red; };
+    auto getValue = [](bool condition, auto trueVal, auto falseVal) { return condition ? trueVal : falseVal; };
+
+    Logger::Print(
+        mLanguageManager.GetString(L"attach_info") + getValue(isAttached, mProcessHelper.GetProcessName(), L"无"),
+        getStatusColor(isAttached)
+    );
+    Logger::Print(
+        mLanguageManager.GetString(L"sun_amount_info") +
+        getValue(hasBoardAddr, std::to_wstring(GhTrMemory(mProcessHelper).GetSunValue()), L"无法获取"),
+        getStatusColor(hasBoardAddr)
+    );
 }

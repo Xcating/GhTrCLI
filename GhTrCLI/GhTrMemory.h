@@ -13,6 +13,7 @@ public:
     DWORD_PTR GetFileAddress();
     DWORD_PTR GetUnlimitedSunAddress();
     bool SetSunValue(int sunValue);
+    int GetSunValue();
     bool ToggleUnlimitedSun(bool state);
     bool GetUnlimitedSunState();
 private:

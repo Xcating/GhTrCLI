@@ -54,6 +54,7 @@ private:
     void SetSunCommand(const std::vector<std::wstring>& aArgs);
     void SetLangCommand(const std::vector<std::wstring>& aArgs);
     void GameRuleCommand(const std::vector<std::wstring>& aArgs);
+    void InfoCommand(const std::vector<std::wstring>& aArgs);
 
 private:
     // 新增：多级自动补全需要的私有成员
